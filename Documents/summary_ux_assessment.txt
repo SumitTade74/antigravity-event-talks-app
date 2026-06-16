@@ -1,0 +1,4 @@
+Accessibility (a11y) & Keyboard Navigation
+* **Current Behavior**: Custom cards and checkboxes can only be selected via mouse clicks. "New" Indicator (Temporal Highlighting)
+* **Current Behavior**: All cards look identical regardless of how recent they are. Interactive CSV Options
+* **Current Behavior**: Clicking "Export CSV" immediately downloads all filtered updates.

@@ -1,0 +1,28 @@
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as User (Web Browser)
+    participant Client as Client Application (app.js)
+    participant Server as Flask Server (app.py)
+    participant Google as GCP Release Feed (XML)
+
+    User->>Client: Clicks "Refresh Feed"
+    activate Client
+    Client->>Client: Trigger loading state & show spinner
+    Client->>Server: HTTP GET /api/release-notes
+    activate Server
+    Server->>Google: Fetch https://docs.cloud.google.com/feeds/... activate Google
+    Google-->>Server: Raw XML Atom Feed Data
+    deactivate Google
+    Server->>Server: Parse XML, split entries by <h3>, clean HTML to plain text
+    Server-->>Client: HTTP 200 OK (JSON response)
+    deactivate Server
+    Client->>Client: Parse JSON, update local state
+    Client->>Client: Recalculate stats counters & redraw UI cards
+    Client->>Client: Hide loading spinner & update last-synced timestamp
+    deactivate Client
+```
+
+### Flow Breakdown
+
+1. **Feed Return**: Google responds with XML.
