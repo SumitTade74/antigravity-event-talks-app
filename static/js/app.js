@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const floatingInfo = document.getElementById('floating-info');
     const tweetSelectedBtn = document.getElementById('tweet-selected-btn');
     const clearSelectionBtn = document.getElementById('clear-selection-btn');
+    const themeToggle = document.getElementById('theme-toggle');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
 
     // Stats Elements
     const statTotal = document.getElementById('stat-total');
@@ -26,6 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     function init() {
+        // Theme initialization
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+        }
         loadData();
         setupEventListeners();
     }
@@ -48,6 +54,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 render();
             });
         });
+
+        // Theme Toggle
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            if (document.body.classList.contains('light-mode')) {
+                localStorage.setItem('theme', 'light');
+            } else {
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Export CSV
+        exportCsvBtn.addEventListener('click', exportToCSV);
 
         // Bulk Actions
         tweetSelectedBtn.addEventListener('click', tweetSelected);
@@ -164,12 +183,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return list;
     }
 
-    // Render updates cards
-    function render() {
+    function getFilteredUpdates() {
         const allUpdates = getFlattenedUpdates();
-        
-        // Apply Filters
-        const filtered = allUpdates.filter(item => {
+        return allUpdates.filter(item => {
             const matchesFilter = currentFilter === 'all' || 
                 (currentFilter === 'feature' && item.type.toLowerCase().includes('feature')) ||
                 (currentFilter === 'issue' && item.type.toLowerCase().includes('issue')) ||
@@ -183,6 +199,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return matchesFilter && matchesSearch;
         });
+    }
+
+    // Render updates cards
+    function render() {
+        const filtered = getFilteredUpdates();
 
         if (filtered.length === 0) {
             updatesContainer.innerHTML = `
@@ -217,9 +238,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${item.html}
                         </div>
                         <div class="card-footer">
+                            <button class="btn btn-sm btn-copy-card" data-id="${item.id}" title="Copy this update to clipboard">
+                                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span class="copy-btn-text">Copy</span>
+                            </button>
                             <button class="btn btn-sm btn-twitter-share" data-id="${item.id}">
-                                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                                Tweet Update
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" style="margin-right: 4px;"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                                Tweet
                             </button>
                         </div>
                     </div>
@@ -249,8 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Card click (selects card)
             card.addEventListener('click', (e) => {
-                // If they clicked an anchor link or the tweet button, don't toggle selection
-                if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('.btn-twitter-share')) {
+                // If they clicked an anchor link, the tweet button, or copy button, don't toggle selection
+                if (e.target.tagName === 'A' || e.target.closest('a') || e.target.closest('.btn-twitter-share') || e.target.closest('.btn-copy-card')) {
                     return;
                 }
                 toggleSelection(item);
@@ -262,7 +290,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.stopPropagation();
                 openTweetIntent(item);
             });
+
+            // Single card Copy button
+            const copyBtn = card.querySelector('.btn-copy-card');
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyToClipboard(item, copyBtn);
+            });
         });
+    }
+
+    // Helper: Copy individual card text to clipboard
+    function copyToClipboard(item, btn) {
+        const textToCopy = `📢 BigQuery ${item.type} Update (${item.date}):\n\n${item.text}\n\nRead more: ${item.link}\n#BigQuery #GCP`;
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            const btnText = btn.querySelector('.copy-btn-text');
+            const originalText = btnText.textContent;
+            btnText.textContent = "Copied!";
+            btn.classList.add('btn-primary'); // Give visual pop
+            setTimeout(() => {
+                btnText.textContent = originalText;
+                btn.classList.remove('btn-primary');
+            }, 1500);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+        });
+    }
+
+    // Export current filtered updates to CSV
+    // Uses a Blob object to support international characters & prevent URL limits
+    function exportToCSV() {
+        const list = getFilteredUpdates();
+        if (list.length === 0) return;
+
+        const headers = ["Date", "Type", "Description", "URL"];
+        const rows = list.map(item => [
+            item.date,
+            item.type,
+            item.text,
+            item.link
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map(row => row.map(val => `"${val.replace(/"/g, '""')}"`).join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `bigquery_release_notes_${currentFilter}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 
     // Toggle card selection

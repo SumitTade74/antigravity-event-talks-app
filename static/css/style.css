@@ -46,6 +46,48 @@
     --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+body.light-mode {
+    --bg-main: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f1f5f9;
+    --border-color: rgba(0, 0, 0, 0.08);
+    --border-color-active: rgba(99, 102, 241, 0.5);
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    
+    --primary: #4f46e5;
+    --primary-glow: rgba(79, 70, 229, 0.1);
+    --primary-hover: #3730a3;
+    
+    --color-feature-bg: rgba(16, 185, 129, 0.15);
+    --color-issue-bg: rgba(245, 158, 11, 0.15);
+    --color-change-bg: rgba(59, 130, 246, 0.15);
+    --color-breaking-bg: rgba(239, 68, 68, 0.15);
+    --color-announcement-bg: rgba(139, 92, 246, 0.15);
+    --color-general-bg: rgba(107, 114, 128, 0.15);
+    
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    --shadow-neon: 0 0 15px rgba(99, 102, 241, 0.15);
+}
+
+/* Theme Toggle Icon visibility rules */
+body.light-mode .theme-icon-sun {
+    display: none !important;
+}
+body.light-mode .theme-icon-moon {
+    display: block !important;
+}
+body:not(.light-mode) .theme-icon-sun {
+    display: block !important;
+}
+body:not(.light-mode) .theme-icon-moon {
+    display: none !important;
+}
+
+
 * {
     box-sizing: border-box;
     margin: 0;
